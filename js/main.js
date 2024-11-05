@@ -1,157 +1,136 @@
-//execute script when window is loaded
-window.onload = function(){
+// This script creates a D3 choropleth map of Chicago neighborhoods
 
-    var w = 900, h = 500;
+//begin script when window loads
+window.onload = setMap();
 
-    //container block
-    var container = d3.select("body") //get the <body> element from the DOM
-        .append("svg") //put a new svg in the body
-        .attr("width", w) //assign the width
-        .attr("height", h) //assign the height
-        .attr("class", "container") //assign a class name
-        .style("background-color", "rgba(0,0,0,0.2)"); //svg background color
+//set up choropleth map
+function setMap(){
 
-    //innerRect block
-    var innerRect = container.append("rect")
-        .datum(400) //a single value is a DATUM
-        .attr("width", function(d){ //rectangle width
-            return d * 2; //400 * 2 = 800
-        })
-        .attr("height", function(d){ //rectangle height
-            return d; //400
-        })
-        .attr("class", "innerRect") //class name
-        .attr("x", 50) //position from left on the x (horizontal) axis
-        .attr("y", 50) //position from top on the y (vertical) axis
-        .style("fill", "#FFFFFF"); //fill color
-    console.log(innerRect);
+    //map frame dimensions
+    var width = 550,
+    height = 600;
 
-    var cityPop = [
-        { 
-            city: 'Madison',
-            population: 233209
-        },
-        {
-            city: 'Milwaukee',
-            population: 594833
-        },
-        {
-            city: 'Green Bay',
-            population: 104057
-        },
-        {
-            city: 'Superior',
-            population: 27244
-        }
-    ];
+    //create new svg container for the map
+    var map = d3.select("body")
+        .append("svg")
+        .attr("class", "map")
+        .attr("width", width)
+        .attr("height", height);
 
-    var x = d3.scaleLinear() //create the scale
-        .range([90, 750]) //output min and max
-        .domain([0, 3]); //input min and max
-
-    //find the minimum value of the array
-    var minPop = d3.min(cityPop, function(d){
-        return d.population;
-    });
-
-    //find the maximum value of the array
-    var maxPop = d3.max(cityPop, function(d){
-        return d.population;
-    });
-
-    //scale for circles center y coordinate
-    var y = d3.scaleLinear()
-        .range([450, 50]) //was 440, 95
-        .domain([0, 700000]); //was minPop, maxPop
-
-    //color scale generator 
-    var color = d3.scaleLinear()
-    .range([
-        "#FDBE85",
-        "#D94701"
-    ])
-    .domain([
-        minPop, 
-        maxPop
-    ]);
-
-    //Example 2.6 line 3
-    var circles = container.selectAll(".circles") //create an empty selection
-        .data(cityPop) //here we feed in an array
-        .enter() //one of the great mysteries of the universe
-        .append("circle") //inspect the HTML--holy crap, there's some circles there
-        .attr("class", "circles")
-        .attr("id", function(d){
-            return d.city;
-        })
-        .attr("r", function(d){
-            //calculate the radius based on population value as circle area
-            var area = d.population * 0.01;
-            return Math.sqrt(area/Math.PI);
-        })
-        .attr("cx", function(d, i){
-            //use the scale generator with the index to place each circle horizontally
-            return x(i);
-        })
-        .attr("cy", function(d){
-            return y(d.population);
-        })
-        .style("fill", function(d, i){ //add a fill based on the color scale generator
-            return color(d.population);
-        })
-        .style("stroke", "#000"); //black circle stroke
+    //create Albers equal area conic projection centered on Chicago
+    var projection = d3.geoAlbers()
+        .center([0, 41.835])
+        .rotate([87.7, 0, 0])
+        .parallels([42, 41])
+        .scale(75000)
+        .translate([width / 2, height / 2]);
     
-    //create y axis generator
-    var yAxis = d3.axisLeft(y);
+    var path = d3.geoPath()
+    .projection(projection);
 
-    //create axis g element and add axis
-    var axis = container.append("g")
-        .attr("class", "axis")
-        .attr("transform", "translate(50, 0)")
-        .call(yAxis);
+    //use Promise.all to parallelize asynchronous data loading
+    var promises = [];    
+    promises.push(d3.csv("data/chicagoData.csv")); //load attributes from csv    
+    promises.push(d3.json("data/Illinois_Counties.topojson")); //load background IL spatial data
+    promises.push(d3.json("data/Indiana_Counties.topojson")); //load background IN spatial data     
+    promises.push(d3.json("data/chicagoNeighborhoodsSimp2pct.topojson")); //load choropleth spatial data
+    promises.push(d3.json("data/chicagoMetroCities.topojson")); //load background spatial point data
+    //Promise.all(promises).then(callback);
+    Promise.all(promises).then(function(data) {
+        callback(map, path, data, projection); 
+});
+}
 
-    //create a text element and add the title    
-    var title = container.append("text")
-        .attr("class", "title")
-        .attr("text-anchor", "middle")
-        .attr("x", 450)
-        .attr("y", 30)
-        .text("City Populations");
+// Set up callback function
+function callback(map, path, data, projection) {
+    var csvData = data[0],
+        countiesIL = data[1],
+        countiesIN = data[2],
+        chicago = data[3],
+        cities = data[4];
+    console.log(csvData);
+    console.log(countiesIL);
+    console.log(countiesIN);
+    console.log(chicago);
+    console.log(cities);
 
-    //create circle labels
-    var labels = container.selectAll(".labels")
-        .data(cityPop)
-        .enter()
-        .append("text")
-        .attr("class", "labels")
-        .attr("text-anchor", "left")
-        .attr("y", function(d){
-            //vertical position centered on each circle
-            return y(d.population);
-        });
+    //translate TopoJSON polygons
+        var chicagolandCounties = topojson.feature(countiesIL, countiesIL.objects.Illinois_Counties),
+        indianaCounties = topojson.feature(countiesIN, countiesIN.objects.Indiana_Counties),
+        chicagoNeighborhoods = topojson.feature(chicago, chicago.objects.ChicagoNeighborhoodsSimp2pct).features;
+    //examine the results
+    console.log(chicagolandCounties)
+    console.log(indianaCounties)
+    console.log(chicagoNeighborhoods);
 
-    //first line of label
-    var nameLine = labels.append("tspan")
-        .attr("class", "nameLine")
-        .attr("x", function(d,i){
-            //horizontal position to the right of each circle
-            return x(i) + Math.sqrt(d.population * 0.01 / Math.PI) + 5;
-        })
-        .text(function(d){
-            return d.city;
-        });
+    //create graticule generator
+    var graticule = d3.geoGraticule()
+    .step([5, 5]); //place graticule lines every 5 degrees of longitude and latitude
+
+    //create graticule background
+    var gratBackground = map.append("path")
+        .datum(graticule.outline()) //bind graticule background
+        .attr("class", "gratBackground") //assign class for styling
+        .attr("d", path) //project graticule
+
+    //create graticule lines
+    var gratLines = map.selectAll(".gratLines") //select graticule elements that will be created
+        .data(graticule.lines()) //bind graticule lines to each element to be created
+        .enter() //create an element for each datum
+        .append("path") //append each element to the svg as a path element
+        .attr("class", "gratLines") //assign class for styling
+        .attr("d", path); //project graticule lines
     
-    //create format generator
-    var format = d3.format(",");
+    //add Chicago metro IL counties to map
+    var countiesIL = map.append("path")
+    .datum(chicagolandCounties)
+    .attr("class", "counties")
+    .attr("d", path);
 
-    //second line of label
-    var popLine = labels.append("tspan")
-        .attr("class", "popLine")
-        .attr("x", function(d,i){
-            return x(i) + Math.sqrt(d.population * 0.01 / Math.PI) + 5;
-        })
-        .attr("dy", "15") //vertical offset
-        .text(function(d){
-            return "Pop. " + format(d.population); //use format generator to format numbers
-        });
-};
+    //add Indiana's Lake County to map
+    var countiesIN = map.append("path")
+    .datum(indianaCounties)
+    .attr("class", "countiesIN")
+    .attr("d", path);
+   
+    //add Chicago neighborhoods to map
+    var communities = map.selectAll(".communities")
+    .data(chicagoNeighborhoods)
+    .enter()
+    .append("path")
+    .attr("class", function(d){
+        return "communities" + d.properties.community;})
+    .attr("d", path);
+
+   //add labels for Chicago area cities to map
+    var metroCities = map.selectAll(".city-point")
+   .data(topojson.feature(cities, cities.objects.pasted).features)
+   .enter()
+   .append("g")
+   .attr("class", "city-group");
+ 
+   //add circle points for city labels 
+   metroCities.append("circle")
+   .attr("class", "city-point")
+   .attr("cx", function(d) { return projection(d.geometry.coordinates)[0]; })
+   .attr("cy", function(d) { return projection(d.geometry.coordinates)[1]; })
+   .attr("r", 3)
+   .attr("fill", "grey");
+ 
+   //add text for city labels
+   metroCities.append("text")
+   .attr("class", "place-label")
+   .attr("class", function(d) {
+    return "place-label " + (d.properties.City === "Chicago" ? "chicago-label" : "");
+    }) // Create special label for Chicago
+   .attr("x", function(d) {
+     return d.geometry.coordinates[0] > -87.7 ? projection(d.geometry.coordinates)[0] + 5 : projection(d.geometry.coordinates)[0] - 5;
+   }) // Adjust the horizontal offset from circle
+   .attr("y", function(d) { return projection(d.geometry.coordinates)[1] + 7; }) // Adjust the vertical offset from circle
+   .attr("dy", ".35em")
+   .style("text-anchor", function(d) {
+     return d.geometry.coordinates[0] > -87.7 ? "start" : "end";
+   })
+   .text(function(d) { return d.properties.City; });
+
+}

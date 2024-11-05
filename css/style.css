@@ -16,3 +16,47 @@
     font-size: 1.5em;
     font-weight: bold;
 }
+.counties {
+    fill: white;
+}
+.countiesIN {
+    fill: white;
+    stroke-dasharray: 3, 3; 
+    stroke-width: .5px;
+    stroke: #969696; 
+  }
+.communities {
+    fill: lightgrey;
+    stroke: whitesmoke;
+    stroke-width: 1;
+  }
+.gratLines {
+    fill: none;
+    stroke: #999;
+    stroke-width: 1px;
+}
+.gratBackground {
+    fill: #D5E3FF;
+}
+.map {
+    border: medium solid #999;
+}
+.place-label {
+    fill: #969696;
+    fill-opacity: .5;
+    font-size: 13px;
+    font-weight: 400;
+    font-family: Arial, Helvetica, sans-serif;
+    }
+.chicago-label {
+    fill: #969696;
+    fill-opacity: 1;
+    font-size: 30px;
+    font-weight: 400;
+    font-family: Arial, Helvetica, sans-serif;
+    }
+.city-point {
+    fill: #969696;
+}
+
+

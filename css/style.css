@@ -26,9 +26,9 @@
     stroke: #969696; 
   }
 .communities {
-    fill: lightgrey;
-    stroke: whitesmoke;
-    stroke-width: 1;
+    stroke: #969696;
+    stroke-width: 1.5;
+    stroke-linecap: round;
   }
 .gratLines {
     fill: none;
@@ -37,9 +37,6 @@
 }
 .gratBackground {
     fill: #D5E3FF;
-}
-.map {
-    border: medium solid #999;
 }
 .place-label {
     fill: #969696;
@@ -58,5 +55,44 @@
 .city-point {
     fill: #969696;
 }
+.map {
+    border: medium solid #999;
+    margin: 10px 0 0 20px;
+}
 
+.chart {
+    float: right;
+    margin: 7px 20px 0 0;
+}
 
+.chartTitle {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1.25em;
+    font-weight: bold;
+    fill: #969696;
+}
+
+.chartBackground {
+    fill: white;
+}
+
+.chartFrame {
+    fill: none;
+    stroke: #999;
+    stroke-width: 3px;
+    shape-rendering: crispEdges;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #999;
+    stroke-width: 1px;
+    shape-rendering: crispEdges;
+}
+
+.axis text {
+    font-family: sans-serif;
+    font-size: 0.8em;
+    fill: #999;
+}

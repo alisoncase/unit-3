@@ -3,29 +3,67 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width">
-            <title></title>
+            <title>Chicago's Unequal Opportunity Landscape</title>
 
         <!--put your external stylesheet links here-->
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="css/style.css">
         <!--[if IE<9]>
             <link rel="stylesheet" href="css/style.ie.css">
         <![endif]-->
-
          <!--you can also place internal styles here;
              place these within <style> tags-->
         
     </head>
 
     <body>
+        <div class="content">
+            <div class="row" style="background-image: url('img/chicagoSkyline.png'); background-size:cover; background-repeat: no-repeat">
+              <div class="center title">
+                <h1><b>Beyond the Skyline: Chicago's Unequal Opportunity Landscape</b></h1>
+                <p class="author"><b>Alison Case | November 2024</b></p>
+              </div>
+            </div>
+          </div>
+        </body>
+             <!--text content block-->
+             <div class="content">
+                 <div class="center">
+                     <p>Chicago, a city renowned for its diversity and vitality, is also marked by significant social and economic disparities. 
+                        Over the past decades, <a href="https://www.urban.org/urban-wire/chicago-neighborhoods-have-stark-differences-economic-opportunity">the gap</a> 
+                        between the city's wealthiest and poorest neighborhoods has widened, leading to significant disparities in health, education, 
+                        and economic opportunity. This map, powered by data from the <a href="https://chicagohealthatlas.org/">Chicago Health Atlas</a>, 
+                        visualizes the stark differences in 11 key indicators across Chicago's 77 community areas. From income inequality to health outcomes, 
+                        the map unveils a city divided, where wealth and opportunity are unevenly distributed.</p>
+                 </div>
+             </div>
+        <!--credits-->
+        <div class="content no-margin">
+            <div class="center">
+                <div class="credits">
+                    <p><b>Credits:</b></p>
+                    <p>Map and chart created with 
+                        <a href="https://d3js.org/">D3</a></p>
+                    <p>Data from the 
+                        <a href="https://chicagohealthatlas.org/">Chicago Health Atlas</a></p>
+                        <p>Shapefiles from the:</p>
+                        <ul>
+                          <li><a href="https://data.cityofchicago.org/Facilities-Geographic-Boundaries/Boundaries-Community-Areas-current-/cauq-8yn6">City of Chicago</a></li>
+                          <li><a href="https://gis-idot.opendata.arcgis.com/datasets/IDOT::illinois-counties/about">Illinois Department of Transportation</a></li>
+                          <li><a href="https://hub.arcgis.com/datasets/INMap::county-boundaries-of-indiana-2023/about">Indiana Geographic Information Office</a></li>
+                        </ul>
+                    <p>Cover image by
+                        <a href="https://stock.adobe.com/contributor/209456107/budypiasa">Budypiasa/stock.adobe.com</a>
+                    </p>
+                </div>
+            </div>
         <div id="mydiv">
-        <!--put your initial page content here-->
-
         <!--you can also use this space for internal scripts;
         place these within <script> tags-->
-        <script type="text/javascript" src="lib/d3.v7.min.js"></script>
-        <script type="text/javascript" src="lib/topojson.js"></script>
-        <!--put your external script links here-->
-        <script type="text/javascript" src="js/main.js"></script>
-        <script src="https://unpkg.com/simple-statistics@7.8.3/dist/simple-statistics.min.js"></script>
+            <script type="text/javascript" src="lib/d3.v7.min.js"></script>
+            <script type="text/javascript" src="lib/topojson.js"></script>
+            <!--put your external script links here-->
+            <script type="text/javascript" src="js/main.js"></script>
+            <script src="https://unpkg.com/simple-statistics@7.8.3/dist/simple-statistics.min.js"></script>
     </body>
 </html>

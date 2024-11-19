@@ -67,7 +67,6 @@ function setMap(){
     promises.push(d3.json("data/Indiana_Counties.topojson")); //load background IN spatial data     
     promises.push(d3.json("data/chicagoNeighborhoodsSimp2pct.topojson")); //load choropleth spatial data
     promises.push(d3.json("data/chicagoMetroCities.topojson")); //load background spatial point data
-    //Promise.all(promises).then(callback);
     Promise.all(promises).then(function(data) {
         callback(map, path, data, projection); 
     });
@@ -114,9 +113,6 @@ function setMap(){
 
         //add dropdown menu for attribute selection
         createDropdown(csvData);
-
-        //add dropdown change event handler
-        //changeAttribute();
     };
 }; //end of setMap()
 
@@ -159,8 +155,6 @@ function makeColorScale(data){
 //function to create dynamic label
 function setLabel(props){
     //label content
-    //var labelAttribute = "<h1>" + props[expressed] +
-    //    "</h1><b>" + expressed + "</b>";
     var labelAttribute = "<h1>" + props[expressed].toFixed(2) + 
     "%</h1><b>" + expressed + "</b>";
 
@@ -185,15 +179,15 @@ function moveLabel(event){
         .width;
 
     //use coordinates of mousemove event to set label coordinates
-    var x1 = event.clientX + 10,
-        y1 = event.clientY - 75,
-        x2 = event.clientX - labelWidth - 10,
-        y2 = event.clientY + 25;
+    var x1 = event.clientX + 2,
+        y1 = event.clientY - 2,
+        x2 = event.clientX - labelWidth - 2,
+        y2 = event.clientY + 2;
 
     //horizontal label coordinate, testing for overflow
-    var x = event.clientX > window.innerWidth - labelWidth - 20 ? x2 : x1; 
+    var x = event.clientX > window.innerWidth - labelWidth - 2 ? x2 : x1; 
     //vertical label coordinate, testing for overflow
-    var y = event.clientY < 75 ? y2 : y1; 
+    var y = event.clientY < 2 ? y2 : y1; 
 
     d3.select(".infolabel")
         .style("left", x + "px")
@@ -477,11 +471,11 @@ function changeAttribute(attribute, csvData) {
                 } else {
                     return "#ccc";
                 }
-    });
+});
     
     //Sort bars
     var bars = d3.selectAll(".bar")
-        //Sort bars
+      //Sort bars
         .sort(function(a, b){
             return b[expressed] - a[expressed];
         })
@@ -493,7 +487,6 @@ function changeAttribute(attribute, csvData) {
 
     updateChart(bars, csvData.length, colorScale);
 };
-
 
 //function to position, size, and color bars in chart
 function updateChart(bars, n, colorScale){

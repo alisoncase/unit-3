@@ -1,4 +1,4 @@
-// This script creates a D3 choropleth map of Chicago neighborhoods
+// This script creates a D3 choropleth map of Chicago neighborhoods 
 
 //Wrap everything in a self-executing anonymous function to move to local scope
 (function(){

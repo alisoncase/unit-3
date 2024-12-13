@@ -1,10 +1,11 @@
-// This script creates a D3 choropleth map of Chicago neighborhoods 
+// This script creates a D3 choropleth map of Chicago neighborhoods
 
-//Wrap everything in a self-executing anonymous function to move to local scope
+// Wrap everything in a self-executing anonymous function to move to local scope
 (function(){
 
-//pseudo-global variables
-var attrArray = ["UnemploymentRate", 
+// Pseudo-global variables
+var attrArray = [
+    "UnemploymentRate", 
     "HighSchoolGraduation", 
     "PovertyRate",
     "PerceivedNeighborhoodViolenceRate",
@@ -14,10 +15,11 @@ var attrArray = ["UnemploymentRate",
     "OverallHealthStatusRate",
     "PrimaryCareProviderRate",
     "RoutineCheckupRate",
-    "ReceivedNeededCareRate"]; // list of attributes
-var expressed = attrArray[0]; //initial attribute
+    "ReceivedNeededCareRate"
+]; // List of attributes for the map and chart
+var expressed = attrArray[0]; // Initial attribute displayed
 
-//chart frame dimensions
+// Chart frame dimensions
 var chartWidth = window.innerWidth * 0.425,
     chartHeight = 473,
     leftPadding = 25,
@@ -27,29 +29,29 @@ var chartWidth = window.innerWidth * 0.425,
     chartInnerHeight = chartHeight - topBottomPadding * 2,
     translate = "translate(" + leftPadding + "," + topBottomPadding + ")";
 
-// create a scale to size bars proportionally to frame and for axis
+// Scale for sizing bars proportionally and for the axis
 var yScale = d3.scaleLinear()
     .range([463, 0])
     .domain([0, 100]);
 
-//begin script when window loads
+// Begin script when window loads
 window.onload = setMap();
 
-//set up choropleth map
+// Function to set up the choropleth map
 function setMap(){
 
-    //map frame dimensions
+    // Map frame dimensions
     var width = window.innerWidth * 0.425,
-    height = 600;
+        height = 600;
 
-    //create new svg container for the map
+    // Create new SVG container for the map
     var map = d3.select("body")
         .append("svg")
         .attr("class", "map")
         .attr("width", width)
         .attr("height", height);
 
-    //create Albers equal area conic projection centered on Chicago
+    // Create Albers equal area conic projection centered on Chicago
     var projection = d3.geoAlbers()
         .center([0, 41.835])
         .rotate([87.7, 0, 0])
@@ -57,66 +59,70 @@ function setMap(){
         .scale(75000)
         .translate([width / 2, height / 2]);
     
+    // Create path generator based on the projection
     var path = d3.geoPath()
-    .projection(projection);
+        .projection(projection);
 
-    //use Promise.all to parallelize asynchronous data loading
+    // Use Promise.all to parallelize asynchronous data loading
     var promises = [];    
-    promises.push(d3.csv("data/chicagoData.csv")); //load attributes from csv    
-    promises.push(d3.json("data/Illinois_Counties.topojson")); //load background IL spatial data
-    promises.push(d3.json("data/Indiana_Counties.topojson")); //load background IN spatial data     
-    promises.push(d3.json("data/chicagoNeighborhoodsSimp2pct.topojson")); //load choropleth spatial data
-    promises.push(d3.json("data/chicagoMetroCities.topojson")); //load background spatial point data
+    promises.push(d3.csv("data/chicagoData.csv")); // Load attributes from CSV    
+    promises.push(d3.json("data/Illinois_Counties.topojson")); // Load IL counties spatial data
+    promises.push(d3.json("data/Indiana_Counties.topojson")); // Load IN counties spatial data     
+    promises.push(d3.json("data/chicagoNeighborhoodsSimp2pct.topojson")); // Load Chicago neighborhoods spatial data
+    promises.push(d3.json("data/chicagoMetroCities.topojson")); // Load cities spatial point data
     Promise.all(promises).then(function(data) {
         callback(map, path, data, projection); 
     });
 
-    // Set up callback function
+    // Callback function to process data and set up the map
     function callback(map, path, data, projection) {
         var csvData = data[0],
             countiesIL = data[1],
             countiesIN = data[2],
             chicago = data[3],
             cities = data[4];
+
+        // Debugging logs
         console.log(csvData);
         console.log(countiesIL);
         console.log(countiesIN);
         console.log(chicago);
         console.log(cities);
 
-        //place graticule on the map
+        // Place graticule on the map
         setGraticule(map, path);
 
-        //translate TopoJSON polygons
-            var chicagolandCounties = topojson.feature(countiesIL, countiesIL.objects.Illinois_Counties),
+        // Translate TopoJSON objects to GeoJSON features
+        var chicagolandCounties = topojson.feature(countiesIL, countiesIL.objects.Illinois_Counties),
             indianaCounties = topojson.feature(countiesIN, countiesIN.objects.Indiana_Counties),
             chicagoNeighborhoods = topojson.feature(chicago, chicago.objects.ChicagoNeighborhoodsSimp2pct).features;
-        //examine the results
-        console.log(chicagolandCounties)
-        console.log(indianaCounties)
+
+        // Examine the results in the console
+        console.log(chicagolandCounties);
+        console.log(indianaCounties);
         console.log(chicagoNeighborhoods);
                
-        //join csv data to GeoJSON enumeration units
+        // Join CSV data to GeoJSON enumeration units
         chicagoNeighborhoods = joinData(chicagoNeighborhoods, csvData);
 
-        //create the color scale
+        // Create the color scale
         var colorScale = makeColorScale(csvData);
 
-        //add enumeration units to the map
+        // Add enumeration units to the map
         setEnumerationUnits(chicagolandCounties, indianaCounties, chicagoNeighborhoods, map, path, colorScale);
 
-        //add cities to the map
+        // Add city labels to the map
         setCityLabels(cities, map, path, projection);
 
-        //add coordinated visualization to the map
+        // Add coordinated visualization (chart) to the map
         setChart(csvData, colorScale);
 
-        //add dropdown menu for attribute selection
+        // Add dropdown menu for attribute selection
         createDropdown(csvData);
     };
-}; //end of setMap()
+}; // End of setMap()
 
-//function to create color scale generator
+// Function to create color scale generator
 function makeColorScale(data){
     var colorClasses = [
         "#f2f0f7",
@@ -126,93 +132,100 @@ function makeColorScale(data){
         "#54278f"
     ];
 
-    //create color scale generator
+    // Create color scale generator
     var colorScale = d3.scaleThreshold()
         .range(colorClasses);
 
-    //build array of all values of the expressed attribute
+    // Build array of all values of the expressed attribute
     var domainArray = [];
     for (var i=0; i<data.length; i++){
         var val = parseFloat(data[i][expressed]);
         domainArray.push(val);
     };
 
-    //cluster data using ckmeans clustering algorithm to create natural breaks
+    // Cluster data using ckmeans clustering algorithm to create natural breaks
     var clusters = ss.ckmeans(domainArray, 5);
-    //reset domain array to cluster minimums
+
+    // Reset domain array to cluster minimums
     domainArray = clusters.map(function(d){
         return d3.min(d);
     });
-    //remove first value from domain array to create class breakpoints
+
+    // Remove first value from domain array to create class breakpoints
     domainArray.shift();
 
-    //assign array of last 4 cluster minimums as domain
+    // Assign array of last 4 cluster minimums as domain
     colorScale.domain(domainArray);
 
     return colorScale;
 };
 
-//function to create dynamic label
+// Function to create dynamic label
 function setLabel(props){
-    //label content
+    // Label content with attribute value and name
     var labelAttribute = "<h1>" + props[expressed].toFixed(2) + 
     "%</h1><b>" + expressed + "</b>";
 
-    //create info label div
+    // Create info label div
     var infolabel = d3.select("body")
         .append("div")
         .attr("class", "infolabel")
         .attr("id", props.community + "_label")
         .html(labelAttribute);
 
+    // Add neighborhood name to the label
     var neighborhoodName = infolabel.append("div")
         .attr("class", "labelname")
         .html(props.community);
 };
 
-//function to move info label with mouse
+// Function to move info label with mouse
 function moveLabel(event){
-    //get width of label
+    // Get width of label
     var labelWidth = d3.select(".infolabel")
         .node()
         .getBoundingClientRect()
         .width;
 
-    //use coordinates of mousemove event to set label coordinates
+    // Use coordinates of mousemove event to set label coordinates
     var x1 = event.clientX + 2,
         y1 = event.clientY - 2,
         x2 = event.clientX - labelWidth - 2,
         y2 = event.clientY + 2;
 
-    //horizontal label coordinate, testing for overflow
+    // Horizontal label coordinate, testing for overflow
     var x = event.clientX > window.innerWidth - labelWidth - 2 ? x2 : x1; 
-    //vertical label coordinate, testing for overflow
+    // Vertical label coordinate, testing for overflow
     var y = event.clientY < 2 ? y2 : y1; 
 
+    // Move the label to calculated coordinates
     d3.select(".infolabel")
         .style("left", x + "px")
         .style("top", y + "px");
 };
 
-//function to highlight enumeration units and bars
+// Function to highlight enumeration units and bars
 function highlight(props){
-    //change stroke
+    // Change stroke to highlight feature
     var selected = d3.selectAll("." + props.community)
         .style("stroke", "black")
         .style("stroke-width", "2");
+    // Show the information label
     setLabel(props);
 };
 
-//function to reset the element style on mouseout
+// Function to reset the element style on mouseout
 function dehighlight(props){
     var selected = d3.selectAll("." + props.community)
+        // Reset stroke style using original values
         .style("stroke", function(){
-            return getStyle(this, "stroke")
+            return getStyle(this, "stroke");
         })
         .style("stroke-width", function(){
-            return getStyle(this, "stroke-width")
+            return getStyle(this, "stroke-width");
         });
 
+    // Function to get original style from <desc> element
     function getStyle(element, styleName){
         var styleText = d3.select(element)
             .select("desc")
@@ -222,86 +235,91 @@ function dehighlight(props){
 
         return styleObject[styleName];
     };
-    //remove info label
-    d3.select(".infolabel")
-    .remove();
+    // Remove info label
+    d3.select(".infolabel").remove();
 };
 
+// Function to set graticule lines on the map
 function setGraticule(map, path){
-    //create graticule generator
+    // Create graticule generator
     var graticule = d3.geoGraticule()
-    .step([5, 5]); //place graticule lines every 5 degrees of longitude and latitude
+        .step([5, 5]); // Place graticule lines every 5 degrees
 
-    //create graticule background
+    // Create graticule background
     var gratBackground = map.append("path")
-        .datum(graticule.outline()) //bind graticule background
-        .attr("class", "gratBackground") //assign class for styling
-        .attr("d", path) //project graticule
+        .datum(graticule.outline()) // Bind graticule background
+        .attr("class", "gratBackground") // Assign class for styling
+        .attr("d", path); // Project graticule
 
-    //create graticule lines
-    var gratLines = map.selectAll(".gratLines") //select graticule elements that will be created
-        .data(graticule.lines()) //bind graticule lines to each element to be created
-        .enter() //create an element for each datum
-        .append("path") //append each element to the svg as a path element
-        .attr("class", "gratLines") //assign class for styling
-        .attr("d", path); //project graticule lines
+    // Create graticule lines
+    var gratLines = map.selectAll(".gratLines")
+        .data(graticule.lines()) // Bind graticule lines
+        .enter()
+        .append("path")
+        .attr("class", "gratLines") // Assign class for styling
+        .attr("d", path); // Project graticule lines
 };
 
+// Function to join CSV data to GeoJSON features
 function joinData(chicagoNeighborhoods, csvData){
-    //loop through csv to assign each set of csv attribute values to geojson region
+    // Loop through CSV to assign each set of CSV attribute values to GeoJSON region
     for (var i=0; i<csvData.length; i++){
-        var csvNeighborhood = csvData[i]; //the current Chicago neighborhood
-        var csvKey = csvNeighborhood.community.toUpperCase(); //the CSV primary key converted to upper case to match geojson
+        var csvNeighborhood = csvData[i]; // The current neighborhood
+        var csvKey = csvNeighborhood.community.toUpperCase(); // CSV primary key in uppercase
 
-        //loop through geojson regions to find correct region
+        // Loop through GeoJSON regions to find matching region
         for (var a=0; a<chicagoNeighborhoods.length; a++){
 
-            var geojsonProps = chicagoNeighborhoods[a].properties; //the current neighborhood geojson properties
-            var geojsonKey = geojsonProps.community; //the geojson primary key
+            var geojsonProps = chicagoNeighborhoods[a].properties; // GeoJSON properties
+            var geojsonKey = geojsonProps.community; // GeoJSON primary key
 
-            //where primary keys match, transfer csv data to geojson properties object
+            // Where primary keys match, transfer CSV data to GeoJSON properties object
             if (geojsonKey == csvKey){  
-                //assign all attributes and values
+                // Assign all attributes and values
                 attrArray.forEach(function(attr){
-                    var val = parseFloat(csvNeighborhood[attr]); //get csv attribute value
-                    geojsonProps[attr] = val; //assign attribute and value to geojson properties
+                    var val = parseFloat(csvNeighborhood[attr]); // Get CSV attribute value
+                    geojsonProps[attr] = val; // Assign attribute and value to GeoJSON properties
                 });
             };
         };
     }
-    return chicagoNeighborhoods
+    return chicagoNeighborhoods;
 };
  
+// Function to add enumeration units to the map
 function setEnumerationUnits(chicagolandCounties, indianaCounties, chicagoNeighborhoods, map, path, colorScale){
-    //add Chicago metro IL counties to map
+    // Add Chicago metro IL counties to map
     var ilCounties = map.append("path")
         .datum(chicagolandCounties)
         .attr("class", "counties")
         .attr("d", path);
 
-    //add Indiana's Lake County to map
+    // Add Indiana's Lake County to map
     var inCounties = map.append("path")
         .datum(indianaCounties)
         .attr("class", "countiesIN")
         .attr("d", path);
    
-    //add Chicago neighborhoods to map
+    // Add Chicago neighborhoods to map
     var communities = map.selectAll(".communities")
         .data(chicagoNeighborhoods)
         .enter()
         .append("path")
         .attr("class", function(d){
-            return "communities" + d.properties.community;})
+            return "communities " + d.properties.community;
+        })
         .attr("d", path)
         .style("fill", function(d){
+            // Style fill based on data value
             var value = d.properties[expressed];
             if(value) {
                 return colorScale(d.properties[expressed]);
             } else {
-                console.warn("Missing or invalid value for:", d.properties.community)
+                console.warn("Missing or invalid value for:", d.properties.community);
                 return "#ccc";
             }               
         })
+        // Add interactivity
         .on("mouseover", function(event, d){
             highlight(d.properties);
         })
@@ -309,46 +327,49 @@ function setEnumerationUnits(chicagolandCounties, indianaCounties, chicagoNeighb
             dehighlight(d.properties);
         })
         .on("mousemove", moveLabel);
+
+    // Append description for original styles
     var desc = communities.append("desc")
         .text('{"stroke": "#969696", "stroke-width": "1.5px"}');
 };
 
+// Function to add city labels to the map
 function setCityLabels(cities, map, path, projection){
-       //add labels for Chicago area cities to map
-       var metroCities = map.selectAll(".city-point")
-       .data(topojson.feature(cities, cities.objects.pasted).features)
-       .enter()
-       .append("g")
-       .attr("class", "city-group");
-     
-       //add circle points for city labels 
-       metroCities.append("circle")
-       .attr("class", "city-point")
-       .attr("cx", function(d) { return projection(d.geometry.coordinates)[0]; })
-       .attr("cy", function(d) { return projection(d.geometry.coordinates)[1]; })
-       .attr("r", 3)
-       .attr("fill", "grey");
-     
-       //add text for city labels
-       metroCities.append("text")
-       .attr("class", "place-label")
-       .attr("class", function(d) {
-        return "place-label " + (d.properties.City === "Chicago" ? "chicago-label" : "");
+    // Add labels for Chicago area cities to map
+    var metroCities = map.selectAll(".city-point")
+        .data(topojson.feature(cities, cities.objects.pasted).features)
+        .enter()
+        .append("g")
+        .attr("class", "city-group");
+    
+    // Add circle points for city labels 
+    metroCities.append("circle")
+        .attr("class", "city-point")
+        .attr("cx", function(d) { return projection(d.geometry.coordinates)[0]; })
+        .attr("cy", function(d) { return projection(d.geometry.coordinates)[1]; })
+        .attr("r", 3)
+        .attr("fill", "grey");
+    
+    // Add text for city labels
+    metroCities.append("text")
+        .attr("class", function(d) {
+            return "place-label " + (d.properties.City === "Chicago" ? "chicago-label" : "");
         }) // Create special label for Chicago
-       .attr("x", function(d) {
-         return d.geometry.coordinates[0] > -87.7 ? projection(d.geometry.coordinates)[0] + 5 : projection(d.geometry.coordinates)[0] - 5;
-       }) // Adjust the horizontal offset from circle
-       .attr("y", function(d) { return projection(d.geometry.coordinates)[1] + 7; }) // Adjust the vertical offset from circle
-       .attr("dy", ".35em")
-       .style("text-anchor", function(d) {
-         return d.geometry.coordinates[0] > -87.7 ? "start" : "end";
-       })
-       .text(function(d) { return d.properties.City; });
+        .attr("x", function(d) {
+            // Adjust the horizontal offset from circle
+            return d.geometry.coordinates[0] > -87.7 ? projection(d.geometry.coordinates)[0] + 5 : projection(d.geometry.coordinates)[0] - 5;
+        })
+        .attr("y", function(d) { return projection(d.geometry.coordinates)[1] + 7; }) // Adjust the vertical offset from circle
+        .attr("dy", ".35em")
+        .style("text-anchor", function(d) {
+            return d.geometry.coordinates[0] > -87.7 ? "start" : "end";
+        })
+        .text(function(d) { return d.properties.City; });
 };
 
-//function to create coordinated bar chart
+// Function to create coordinated bar chart
 function setChart(csvData, colorScale){
-    //chart frame dimensions
+    // Chart frame dimensions
     var chartWidth = window.innerWidth * 0.425,
         chartHeight = 473,
         leftPadding = 25,
@@ -358,37 +379,38 @@ function setChart(csvData, colorScale){
         chartInnerHeight = chartHeight - topBottomPadding * 2,
         translate = "translate(" + leftPadding + "," + topBottomPadding + ")";
 
-    //create a second svg element to hold the bar chart
+    // Create a second SVG element to hold the bar chart
     var chart = d3.select("body")
         .append("svg")
         .attr("width", chartWidth)
         .attr("height", chartHeight)
         .attr("class", "chart");
 
-    //create a rectangle for chart background fill
+    // Create a rectangle for chart background fill
     var chartBackground = chart.append("rect")
         .attr("class", "chartBackground")
         .attr("width", chartInnerWidth)
         .attr("height", chartInnerHeight)
         .attr("transform", translate);
 
-    //create a scale to size bars proportionally to frame and for axis
+    // Create a scale to size bars proportionally and for axis
     var yScale = d3.scaleLinear()
         .range([463, 0])
         .domain([0, 100]);
 
-    //set bars for each neighborhood
+    // Set bars for each neighborhood
     var bars = chart.selectAll(".bar")
         .data(csvData)
         .enter()
         .append("rect")
         .sort(function(a, b){
-            return b[expressed]-a[expressed]
+            return b[expressed]-a[expressed];
         })
         .attr("class", function(d){
             return "bar " + d.community;
         })
         .attr("width", chartInnerWidth / csvData.length - 1)
+        // Add interactivity
         .on("mouseover", function(event, d){
             highlight(d);
         })
@@ -396,112 +418,114 @@ function setChart(csvData, colorScale){
             dehighlight(d);
         })
         .on("mousemove", moveLabel);
+
+    // Append description for original styles
     var desc = bars.append("desc")
         .text('{"stroke": "none", "stroke-width": "0px"}');
 
-    //create a text element for the chart title
+    // Create a text element for the chart title
     var chartTitle = chart.append("text")
         .attr("x", 40)
         .attr("y", 40)
         .attr("class", "chartTitle")
         .text(`${expressed.replace(/([a-z])([A-Z])/g, '$1 $2')} in each Neighborhood`);
     
-    //create vertical axis generator
+    // Create vertical axis generator
     var yAxis = d3.axisLeft()
         .scale(yScale);
 
-    //place axis
+    // Place axis
     var axis = chart.append("g")
         .attr("class", "axis")
         .attr("transform", translate)
         .call(yAxis);
 
-    //create frame for chart border
+    // Create frame for chart border
     var chartFrame = chart.append("rect")
         .attr("class", "chartFrame")
         .attr("width", chartInnerWidth)
         .attr("height", chartInnerHeight)
         .attr("transform", translate);
     
-    //set bar positions, heights, and colors
+    // Set bar positions, heights, and colors
     updateChart(bars, csvData.length, colorScale);
 };
 
-//function to create a dropdown menu for attribute selection
+// Function to create a dropdown menu for attribute selection
 function createDropdown(csvData){
-    //add select element
+    // Add select element
     var dropdown = d3.select("body")
         .append("select")
         .attr("class", "dropdown")
         .on("change", function(){
-            changeAttribute(this.value, csvData)
+            changeAttribute(this.value, csvData);
         });
 
-    //add initial option
+    // Add initial option
     var titleOption = dropdown.append("option")
         .attr("class", "titleOption")
         .attr("disabled", "true")
         .text("Select Attribute");
 
-    //add attribute name options
+    // Add attribute name options
     var attrOptions = dropdown.selectAll("attrOptions")
         .data(attrArray)
         .enter()
         .append("option")
-        .attr("value", function(d){ return d })
-        .text(function(d){ return d });
+        .attr("value", function(d){ return d; })
+        .text(function(d){ return d; });
 };
 
-//dropdown change event handler
+// Dropdown change event handler
 function changeAttribute(attribute, csvData) {
-    //change the expressed attribute
+    // Change the expressed attribute
     expressed = attribute;
 
-    //recreate the color scale
+    // Recreate the color scale
     var colorScale = makeColorScale(csvData);
 
-    //recolor enumeration units
+    // Recolor enumeration units
     var neighborhoodsRecolor = d3.selectAll(".communities")
         .transition()
         .duration(1000)
         .style("fill", function (d) {
             var value = d.properties[expressed];
-                if (value) {
-                    return colorScale(d.properties[expressed]);
-                } else {
-                    return "#ccc";
-                }
-});
+            if (value) {
+                return colorScale(d.properties[expressed]);
+            } else {
+                return "#ccc";
+            }
+        });
     
-    //Sort bars
+    // Sort bars
     var bars = d3.selectAll(".bar")
-      //Sort bars
         .sort(function(a, b){
             return b[expressed] - a[expressed];
         })
-        .transition() //add animation
+        .transition() // Add animation
         .delay(function(d, i){
-            return i * 20
+            return i * 20;
         })
         .duration(500);
 
+    // Update chart with new attribute values
     updateChart(bars, csvData.length, colorScale);
 };
 
-//function to position, size, and color bars in chart
+// Function to position, size, and color bars in chart
 function updateChart(bars, n, colorScale){
-    //position bars
+    // Position bars
     bars.attr("x", function(d, i){
             return i * (chartInnerWidth / n) + leftPadding;
         })
-        //size/resize bars
+        // Size/resizes bars
         .attr("height", function(d, i){
             return 463 - yScale(parseFloat(d[expressed]));
         })
         .attr("y", function(d, i){
             return yScale(parseFloat(d[expressed])) + topBottomPadding;
         })
-        //color/recolor bars
+        // Color/recolor bars
         .style("fill", function(d){            
             var value = d[expressed];            
             if(value) {                
@@ -509,10 +533,10 @@ function updateChart(bars, n, colorScale){
             } else {                
                 return "#ccc";            
             }    
-    });
-    //add text to chart title
+        });
+    // Update chart title
     var chartTitle = d3.select(".chartTitle")
         .text(`${expressed.replace(/([a-z])([A-Z])/g, '$1 $2')} in each Neighborhood`);
 };
 
-})();
+})(); // End of self-executing anonymous function
